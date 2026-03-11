@@ -1,3 +1,17 @@
+__pycache__/
+venv/
+.venv/
+Include/
+Lib/
+Scripts/
+share/
+pyvenv.cfg
+.idea
+.vscode
+comandas_db.db
+
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

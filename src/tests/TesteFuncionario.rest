@@ -1,0 +1,36 @@
+# Artur Bonamigo
+
+### Verbo GET – listar todos
+GET http://localhost:8000/funcionario/ HTTP/1.1
+
+### Verbo GET – listar um
+GET http://localhost:8000/funcionario/10 HTTP/1.1
+
+### Verbo POST – adicionar
+POST http://127.0.0.1:8000/funcionario/ HTTP/1.1
+content-type: application/json
+
+{
+    "nome" : "Artur Bonamigo",
+    "matricula" : "123456789",
+    "cpf" : "1",
+    "telefone" : "49984211154",
+    "grupo" : "1",
+    "senha" : "123456789"
+}
+
+### Verbo PUT – atualiza
+PUT http://127.0.0.1:8000/funcionario/2 HTTP/1.1
+content-type : application/json
+
+{
+    "nome" : "Artur Bonamigo",
+    "matricula" : "123456789",
+    "cpf" : "1",
+    "telefone" : "49984211154",
+    "grupo" : "1",
+    "senha" : "987654321"
+}
+
+### Verbo DELETE - excluir
+DELETE http://127.0.0.1:8000/funcionario/3 HTTP/1.1
