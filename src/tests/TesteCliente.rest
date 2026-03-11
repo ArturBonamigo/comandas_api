@@ -1,0 +1,30 @@
+# Artur Bonamigo
+
+### Verbo GET – listar todos
+GET http://localhost:8000/cliente/ HTTP/1.1
+
+### Verbo GET – listar um
+GET http://localhost:8000/cliente/10 HTTP/1.1
+
+### Verbo POST – adicionar
+POST http://localhost:8000/cliente/ HTTP/1.1
+Content-Type: application/json
+
+{
+    "nome" : "Artur Bonamigo",
+    "cpf" : "0123456789",
+    "telefone" : "49984211154"    
+}
+
+### Verbo PUT – atualiza
+PUT http://localhost:8000/cliente/2 HTTP/1.1
+Content-Type: application/json
+
+{
+    "nome" : "Artur Bonamigo",
+    "cpf" : "0123456789",
+    "telefone" : "49984078964"    
+}
+
+### Verbo DELETE - excluir
+DELETE http://localhost:8000/cliente/3 HTTP/1.1

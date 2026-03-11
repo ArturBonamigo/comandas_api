@@ -1,3 +1,5 @@
+# Artur Bonamigo
+
 from pydantic import BaseModel
 
 class Funcionario(BaseModel):
