@@ -11,11 +11,11 @@ POST http://127.0.0.1:8000/funcionario/ HTTP/1.1
 content-type: application/json
 
 {
-    "nome" : "Artur Bonamigo",
-    "matricula" : "123456789",
-    "cpf" : "1",
-    "telefone" : "49984211154",
-    "grupo" : "1",
+    "nome" : "João Vitor",
+    "matricula" : "111111111",
+    "cpf" : "33333333333",
+    "telefone" : "49984211150",
+    "grupo" : "3",
     "senha" : "123456789"
 }
 
@@ -26,7 +26,7 @@ content-type : application/json
 {
     "nome" : "Artur Bonamigo",
     "matricula" : "123456789",
-    "cpf" : "1",
+    "cpf" : "11111111111",
     "telefone" : "49984211154",
     "grupo" : "1",
     "senha" : "987654321"
