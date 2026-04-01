@@ -1,32 +1,36 @@
 # Artur Bonamigo
 
+# token
+@access_token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMTExMTExMTExMSIsImlkIjoxLCJncnVwbyI6MSwiZXhwIjoxNzc1MDc5MTYwLCJ0eXBlIjoiYWNjZXNzIn0.MJppGDRn5lWX3q0xyGBSSzroMta_e1rORkbN-s3bbjo
 ### Verbo GET – listar todos
 GET http://localhost:8000/produto/ HTTP/1.1
+Authorization: Bearer {{access_token}}
 
 ### Verbo GET – listar um
-GET http://localhost:8000/produto/10 HTTP/1.1
+GET http://localhost:8000/produto/1 HTTP/1.1
+Authorization: Bearer {{access_token}}
 
-### Verbo POST – adicionar
+### Verbo POST – criar    
 POST http://localhost:8000/produto/ HTTP/1.1
-Content-Type: application/json
+content-type: application/json
+Authorization: Bearer {{access_token}}
 
 {
-    "nome" : "Teste",
-    "descricao" : "Teste",
-    "foto" : "Teste",
-    "valor_unitario" : 10.00
-}
-
-### Verbo PUT – atualiza
-PUT http://localhost:8000/produto/1 HTTP/1.1
-Content-Type: application/json
-
-{
-    "nome" : "Teste",
-    "descricao" : "Teste",
-    "valor_unitario" : 20.00,
+    "nome" : "Garrafa",
+    "descricao" : "descricao teste",
+    "valor_unitario" : 18.00,
     "foto" : "Teste"
 }
 
+### Verbo PUT – atualiza
+PUT http://127.0.0.1:8000/produto/6 HTTP/1.1
+content-type: application/json
+Authorization: Bearer {{access_token}}
+
+{
+"nome" : "Pastel de Carne, Queijo e Ovo"
+}
+
 ### Verbo DELETE - excluir
-DELETE http://localhost:8000/produto/1 HTTP/1.1
+DELETE http://127.0.0.1:8000/produto/1 HTTP/1.1
+Authorization: Bearer {{access_token}}
