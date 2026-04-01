@@ -1,36 +1,23 @@
-# Artur Bonamigo
+# token
+@access_token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMTExMTExMTExMSIsImlkIjoxLCJncnVwbyI6MSwiZXhwIjoxNzc1MDc1MjE2LCJ0eXBlIjoiYWNjZXNzIn0.-27qkhPUZ53FqDhRqlIyGzpwh89UzMlRBQbrdEb2idE
 
 ### Verbo GET – listar todos
 GET http://localhost:8000/funcionario/ HTTP/1.1
+Authorization: Bearer {{access_token}}
 
 ### Verbo GET – listar um
-GET http://localhost:8000/funcionario/10 HTTP/1.1
-
-### Verbo POST – adicionar
-POST http://127.0.0.1:8000/funcionario/ HTTP/1.1
-content-type: application/json
-
-{
-    "nome" : "João Vitor",
-    "matricula" : "111111111",
-    "cpf" : "33333333333",
-    "telefone" : "49984211150",
-    "grupo" : "3",
-    "senha" : "123456789"
-}
+GET http://localhost:8000/funcionario/3 HTTP/1.1
+Authorization: Bearer {{access_token}}
 
 ### Verbo PUT – atualiza
-PUT http://127.0.0.1:8000/funcionario/1 HTTP/1.1
-content-type : application/json
+PUT http://127.0.0.1:8000/funcionario/3 HTTP/1.1
+content-type: application/json
+Authorization: Bearer {{access_token}}
 
 {
-    "nome" : "Artur Bonamigo",
-    "matricula" : "123456789",
-    "cpf" : "11111111111",
-    "telefone" : "49984211154",
-    "grupo" : "1",
-    "senha" : "987654321"
+"nome" : "Zé das Batatas"
 }
 
 ### Verbo DELETE - excluir
 DELETE http://127.0.0.1:8000/funcionario/1 HTTP/1.1
+Authorization: Bearer {{access_token}}
