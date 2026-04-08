@@ -1,6 +1,10 @@
 # Artur Bonamigo
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
+from services.AuditoriaService import AuditoriaService
+from infra.rate_limit import limiter, get_rate_limit
+from slowapi.errors import RateLimitExceeded
+
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -21,12 +25,14 @@ router = APIRouter()
 
 # Criar as rotas/endpoints: GET, POST, PUT, DELETE
 
-@router.get("/produto/", response_model=List[ProdutoResponse], tags=["Produto"], status_code=status.HTTP_200_OK)
-async def get_produto( 
+@router.get("/produto/", response_model=List[ProdutoResponse], tags=["Produto"], status_code=status.HTTP_200_OK, summary="Listar todos os produtos - protegida por autenticação e grupo 1")
+@limiter.limit(get_rate_limit("moderate"))
+async def get_produto(
+    request: Request, 
     db: Session = Depends(get_db),
     current_user: ProdutoAuth = Depends(require_group([1]))
 ):
-    """Retorna todos os funcionários"""
+    """Retorna todos os produtos"""
     try:
         produtos = db.query(ProdutoDB).all()
         return produtos
@@ -36,8 +42,10 @@ async def get_produto(
             detail=f"Erro ao buscar produtos: {str(e)}"
         )
 
-@router.get("/produto/{id}", response_model=ProdutoResponse, tags=["Produto"], status_code=status.HTTP_200_OK)
-async def get_produto( 
+@router.get("/produto/{id}", response_model=ProdutoResponse, tags=["Produto"], status_code=status.HTTP_200_OK, summary="Buscar produto por ID")
+@limiter.limit(get_rate_limit("critical"))
+async def get_produto(
+    request: Request, 
     id: int, 
     db: Session = Depends(get_db),
     current_user: ProdutoAuth = Depends(get_current_active_user)
@@ -57,8 +65,10 @@ async def get_produto(
             detail=f"Erro ao buscar produto: {str(e)}"
         )
 
-@router.post("/produto/", response_model=ProdutoCreate, status_code=status.HTTP_201_CREATED, tags=["Produto"])
-async def post_produto( 
+@router.post("/produto/", response_model=ProdutoResponse, status_code=status.HTTP_201_CREATED, tags=["Produto"], summary="Criar novo produto - protegida por JWT e grupo 1")
+@limiter.limit(get_rate_limit("restrictive"))
+async def post_produto(
+    request: Request,
     produto_data: ProdutoCreate, 
     db: Session = Depends(get_db),
     current_user: ProdutoAuth = Depends(require_group([1]))
@@ -85,6 +95,18 @@ async def post_produto(
             db.commit()
             db.refresh(novo_produto)
 
+            # Depois de tudo executado e antes do return, registra a ação na auditoria
+            AuditoriaService.registrar_acao(
+                db=db,
+                funcionario_id=current_user.id,
+                acao="CREATE",
+                recurso="PRODUTO",
+                recurso_id=novo_produto.id,
+                dados_antigos=None,
+                dados_novos=novo_produto, # Objeto SQLAlchemy com dados novos
+                request=request # Request completo para capturar IP e user agent
+            )
+
             return novo_produto
         except HTTPException:
             raise
@@ -94,8 +116,10 @@ async def post_produto(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Erro ao criar produto: {str(e)}"
             )
 
-@router.put("/produto/{id}", response_model=ProdutoResponse, tags=["Produto"], status_code=status.HTTP_200_OK)
+@router.put("/produto/{id}", response_model=ProdutoResponse, tags=["Produto"], status_code=status.HTTP_200_OK, summary="Atualizar produto - protegida por JWT e grupo 1")
+@limiter.limit(get_rate_limit("restrictive"))
 async def put_produto( 
+    request: Request,
     id: int, 
     produto_data: ProdutoUpdate, 
     db: Session = Depends(get_db),
@@ -118,6 +142,11 @@ async def put_produto(
                     status_code=status.HTTP_400_BAD_REQUEST, detail="Já existe outro produto com este nome"
                 )
             
+        # armazena uma copia do objeto com os dados atuais, para salvar na auditoria
+        # não pode manter referencia com funcionário, para que o auditoria possa comparar
+        # por isso a cópia do __dict__
+        dados_antigos_obj = produto.__dict__.copy()
+            
         # Atualiza os campos do produto
         update_data = produto_data.model_dump(exclude_unset=True)
 
@@ -126,6 +155,17 @@ async def put_produto(
         
         db.commit()
         db.refresh(produto)
+
+        AuditoriaService.registrar_acao(
+            db=db,
+            funcionario_id=current_user.id,
+            acao="UPDATE",
+            recurso="PRODUTO",
+            recurso_id=produto.id,
+            dados_antigos=dados_antigos_obj, # Objeto SQLAlchemy com dados antigos
+            dados_novos=produto, # Objeto SQLAlchemy com dados novos
+            request=request # Request completo para capturar IP e user agent
+        )
 
         return produto
     
@@ -137,8 +177,10 @@ async def put_produto(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Erro ao atualizar produto: {str(e)}"
         )
     
-@router.delete("/produto/{id}", status_code=status.HTTP_204_NO_CONTENT, tags=["Produto"], summary="Remover produto")
-async def remove_produto( 
+@router.delete("/produto/{id}", status_code=status.HTTP_204_NO_CONTENT, tags=["Produto"], summary="Remover produto - protegida por JWT e grupo 1")
+@limiter.limit(get_rate_limit("critical"))
+async def remove_produto(
+    request: Request,
     id: int, 
     db: Session = Depends(get_db),
     current_user: ProdutoAuth = Depends(require_group([1]))
@@ -154,6 +196,18 @@ async def remove_produto(
         
         db.delete(produto)
         db.commit()
+
+        # Depois de tudo executado e antes do return, registra a ação na auditoria
+        AuditoriaService.registrar_acao(
+            db=db,
+            funcionario_id=current_user.id,
+            acao="DELETE",
+            recurso="PRODUTO",
+            recurso_id=produto.id,
+            dados_antigos=produto,
+            dados_novos=None,
+            request=request
+        )
 
         return None
 

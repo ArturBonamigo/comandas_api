@@ -1,6 +1,10 @@
 # Artur Bonamigo
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
+from services.AuditoriaService import AuditoriaService
+from infra.rate_limit import limiter, get_rate_limit
+from slowapi.errors import RateLimitExceeded
+
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -21,8 +25,10 @@ router = APIRouter()
 
 # Criar as rotas/endpoints: GET, POST, PUT, DELETE
 
-@router.get("/cliente/", response_model=List[ClienteResponse], tags=["Cliente"], status_code=status.HTTP_200_OK)
+@router.get("/cliente/", response_model=List[ClienteResponse], tags=["Cliente"], status_code=status.HTTP_200_OK, summary="Listar todos os clientes - protegida por autenticação e grupo 1")
+@limiter.limit(get_rate_limit("moderate"))
 async def get_cliente(
+    request: Request,
     db: Session = Depends(get_db),
     current_user: ClienteAuth = Depends(require_group([1])),
 ):
@@ -36,8 +42,10 @@ async def get_cliente(
             detail=f"Erro ao buscar clientes: {str(e)}"
         )
 
-@router.get("/cliente/{id}", response_model=ClienteResponse, tags=["Cliente"], status_code=status.HTTP_200_OK)
-async def get_cliente(
+@router.get("/cliente/{id}", response_model=ClienteResponse, tags=["Cliente"], status_code=status.HTTP_200_OK, summary="Buscar cliente por ID")
+@limiter.limit(get_rate_limit("critical"))
+async def get_cliente_by_id(
+    request: Request,
     id: int,
     db: Session = Depends(get_db),
     current_user: ClienteAuth = Depends(get_current_active_user)
@@ -57,8 +65,10 @@ async def get_cliente(
             detail=f"Erro ao buscar cliente: {str(e)}"
         )
 
-@router.post("/cliente/", response_model=ClienteResponse, status_code=status.HTTP_201_CREATED, tags=["Cliente"])
-async def post_cliente( 
+@router.post("/cliente/", response_model=ClienteResponse, status_code=status.HTTP_201_CREATED, tags=["Cliente"], summary="Criar novo cliente - protegida por JWT e grupo 1")
+@limiter.limit(get_rate_limit("restrictive"))
+async def post_cliente(
+    request: Request,
     cliente_data: ClienteCreate, 
     db: Session = Depends(get_db),
     current_user: ClienteAuth = Depends(require_group([1]))
@@ -85,6 +95,18 @@ async def post_cliente(
         db.commit()
         db.refresh(novo_cliente)
         
+        # Depois de tudo executado e antes do return, registra a ação na auditoria
+        AuditoriaService.registrar_acao(
+            db=db,
+            funcionario_id=current_user.id,
+            acao="CREATE",
+            recurso="CLIENTE",
+            recurso_id=novo_cliente.id,
+            dados_antigos=None,
+            dados_novos=novo_cliente, # Objeto SQLAlchemy com dados novos
+            request=request # Request completo para capturar IP e user agent
+        )
+        
         return novo_cliente
     except HTTPException:
         raise
@@ -94,8 +116,10 @@ async def post_cliente(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Erro ao criar cliente: {str(e)}"
         )
 
-@router.put("/cliente/{id}", response_model=ClienteResponse, tags=["Cliente"], status_code=status.HTTP_200_OK)
-async def put_cliente( 
+@router.put("/cliente/{id}", response_model=ClienteResponse, tags=["Cliente"], status_code=status.HTTP_200_OK, summary="Atualizar cliente - protegida por JWT e grupo 1")
+@limiter.limit(get_rate_limit("restrictive"))
+async def put_cliente(
+    request: Request,
     id: int, 
     cliente_data: ClienteUpdate, 
     db: Session = Depends(get_db),
@@ -118,7 +142,12 @@ async def put_cliente(
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST, detail="Já existe um cliente com este CPF"
                 )
-            
+        
+        # armazena uma copia do objeto com os dados atuais, para salvar na auditoria
+        # não pode manter referencia com funcionário, para que o auditoria possa comparar
+        # por isso a cópia do __dict__
+        dados_antigos_obj = cliente.__dict__.copy()
+
         # Atualiza apenas os campos fornecidos
         update_data = cliente_data.model_dump(exclude_unset=True)
         
@@ -127,6 +156,17 @@ async def put_cliente(
 
         db.commit()
         db.refresh(cliente)
+
+        AuditoriaService.registrar_acao(
+            db=db,
+            funcionario_id=current_user.id,
+            acao="UPDATE",
+            recurso="CLIENTE",
+            recurso_id=cliente.id,
+            dados_antigos=dados_antigos_obj, # Objeto SQLAlchemy com dados antigos
+            dados_novos=cliente, # Objeto SQLAlchemy com dados novos
+            request=request # Request completo para capturar IP e user agent
+        )
         
         return cliente
 
@@ -138,8 +178,10 @@ async def put_cliente(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Erro ao atualizar cliente: {str(e)}"
         )
 
-@router.delete("/cliente/{id}", status_code=status.HTTP_204_NO_CONTENT, tags=["Cliente"], summary="Remover cliente")
-async def delete_cliente( 
+@router.delete("/cliente/{id}", status_code=status.HTTP_204_NO_CONTENT, tags=["Cliente"], summary="Remover cliente - protegida por JWT e grupo 1")
+@limiter.limit(get_rate_limit("critical"))
+async def delete_cliente(
+    request: Request,
     id: int, 
     db: Session = Depends(get_db),
     current_user: ClienteAuth = Depends(require_group([1]))
@@ -155,6 +197,18 @@ async def delete_cliente(
         
         db.delete(cliente)
         db.commit()
+
+        # Depois de tudo executado e antes do return, registra a ação na auditoria
+        AuditoriaService.registrar_acao(
+            db=db,
+            funcionario_id=current_user.id,
+            acao="DELETE",
+            recurso="CLIENTE",
+            recurso_id=cliente.id,
+            dados_antigos=cliente,
+            dados_novos=None,
+            request=request
+        )
 
         return None
 
