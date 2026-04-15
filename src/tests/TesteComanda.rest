@@ -1,0 +1,96 @@
+# token 
+@access_token = seuToken
+
+### Buscar comanda específica pelo id
+GET http://127.0.0.1:8000/comanda/2
+Authorization: Bearer {{access_token}}
+
+### Listar todas as comandas
+GET http://127.0.0.1:8000/comanda/
+Authorization: Bearer {{access_token}}
+
+### Filtrar comandas por status (0=aberta, 1=fechada, 2=cancelada)
+GET http://127.0.0.1:8000/comanda/?status=0
+Authorization: Bearer {{access_token}}
+
+### Listar comandas com paginação
+GET http://127.0.0.1:8000/comanda/?skip=2&limit=2
+Authorization: Bearer {{access_token}}
+
+### listar comandas com paginação e filtro por status
+GET http://127.0.0.1:8000/comanda/?skip=10&limit=5&status=1
+
+### Criar nova comanda
+POST http://127.0.0.1:8000/comanda/
+Content-Type: application/json
+Authorization: Bearer {{access_token}} 
+
+{
+    "comanda": "COM-002",
+    "status": 0,
+    //"cliente_id": 0,
+    "funcionario_id": 2
+}
+
+### edita comanda
+PUT http://127.0.0.1:8000/comanda/1 HTTP
+/1.1
+Content-type: application/json
+Authorization: Bearer {{access_token}}
+
+{
+    "comanda" : "1092",
+    "status" : 0,
+    "funcionario_id" : 2,
+    "cliente_id" : 0
+}
+
+### Atualizar comanda mudar cliente
+PUT http://127.0.0.1:8000/comanda/7
+Content-Type: application/json
+Authorization: Bearer {{access_token}} 
+
+{
+    "cliente_id": 4
+}
+
+### Remover comanda
+DELETE http://127.0.0.1:8000/comanda/1
+Authorization: Bearer {{access_token}}
+
+### Cancelar comanda
+PUT http://127.0.0.1:8000/comanda/7/cancelar
+Content-Type: application/json
+Authorization: Bearer {{access_token}}
+
+# token
+@access_token = seuToken
+
+### Adicionar produto à comanda
+POST http://127.0.0.1:8000/comanda/1/produto
+Content-Type: application/json
+Authorization: Bearer {{access_token}} 
+
+{
+    "produto_id": 1,
+    "funcionario_id": 2,
+    "quantidade": 20,
+    "valor_unitario": 51.50
+}
+
+### Listar produtos de uma comanda
+GET http://127.0.0.1:8000/comanda/1/produtos
+Authorization: Bearer {{access_token}}
+
+### Atualizar produto na comanda
+PUT http://127.0.0.1:8000/comanda/produto/2
+Content-Type: application/json
+Authorization: Bearer {{access_token}} 
+{
+    "quantidade":5,
+    "valor_unitario": 15.50
+}
+
+### Remover produto específico da comanda
+DELETE http://127.0.0.1:8000/comanda/produto/3
+Authorization: Bearer {{access_token}}
