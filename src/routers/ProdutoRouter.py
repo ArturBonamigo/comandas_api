@@ -41,6 +41,56 @@ async def get_produto(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erro ao buscar produtos: {str(e)}"
         )
+    
+@router.get(
+    "/produto/public",
+    response_model=List[ProdutoResponse],
+    tags=["Produto"],
+    status_code=status.HTTP_200_OK,
+    summary="Listar produtos públicos"
+)
+@limiter.limit(get_rate_limit("moderate"))
+async def get_produto_public(
+    request: Request,
+    skip: int = 0,
+    limit: int = 100,
+    id: int | None = None,
+    nome: str | None = None,
+    descricao: str | None = None,
+    valor: float | None = None,
+    valor_min: float | None = None,
+    valor_max: float | None = None,
+    db: Session = Depends(get_db)
+):
+    try:
+        query = db.query(ProdutoDB)
+
+        if id is not None:
+            query = query.filter(ProdutoDB.id == id)
+
+        if nome:
+            query = query.filter(ProdutoDB.nome.ilike(f"%{nome}%"))
+
+        if descricao:
+            query = query.filter(ProdutoDB.descricao.ilike(f"%{descricao}%"))
+
+        if valor is not None:
+            query = query.filter(ProdutoDB.valor_unitario == valor)
+
+        if valor_min is not None:
+            query = query.filter(ProdutoDB.valor_unitario >= valor_min)
+
+        if valor_max is not None:
+            query = query.filter(ProdutoDB.valor_unitario <= valor_max)
+
+        produtos = query.offset(skip).limit(limit).all()
+        return produtos
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erro ao buscar produtos públicos: {str(e)}"
+        )
 
 @router.get("/produto/{id}", response_model=ProdutoResponse, tags=["Produto"], status_code=status.HTTP_200_OK, summary="Buscar produto por ID")
 @limiter.limit(get_rate_limit("critical"))

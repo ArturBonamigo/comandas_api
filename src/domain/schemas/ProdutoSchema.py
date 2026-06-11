@@ -20,5 +20,5 @@ class ProdutoResponse(BaseModel):
     id: int
     nome: str
     descricao: str
-    foto: bytes
+    foto: Optional[bytes] = None
     valor_unitario: float
